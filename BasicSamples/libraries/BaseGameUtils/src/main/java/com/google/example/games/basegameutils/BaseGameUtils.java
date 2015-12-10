@@ -115,38 +115,54 @@ public class BaseGameUtils {
             Log.e("BaseGameUtils", "*** No Activity. Can't show failure dialog!");
             return;
         }
-        Dialog errorDialog;
 
+        Runnable r = null;
+        final Activity fact = activity;
+    	final int rc = requestCode;
         switch (actResp) {
             case GamesActivityResultCodes.RESULT_APP_MISCONFIGURED:
-                errorDialog = makeSimpleDialog(activity,
-                        activity.getString(R.string.app_misconfigured));
+                //errorDialog = makeSimpleDialog(activity,
+                //        activity.getString(R.string.app_misconfigured));
+                //errorDialog.show();
+            	r = makeSimpleDialogRunnable(activity, activity.getString(R.string.app_misconfigured) );
                 break;
             case GamesActivityResultCodes.RESULT_SIGN_IN_FAILED:
-                errorDialog = makeSimpleDialog(activity,
-                        activity.getString(R.string.sign_in_failed));
+                //errorDialog = makeSimpleDialog(activity,
+                //        activity.getString(R.string.sign_in_failed));
+                //errorDialog.show();
+            	r = makeSimpleDialogRunnable(activity, activity.getString(R.string.sign_in_failed) );
                 break;
             case GamesActivityResultCodes.RESULT_LICENSE_FAILED:
-                errorDialog = makeSimpleDialog(activity,
-                        activity.getString(R.string.license_failed));
+                //errorDialog = makeSimpleDialog(activity,
+                //        activity.getString(R.string.license_failed));
+                //errorDialog.show();
+            	r = makeSimpleDialogRunnable(activity, activity.getString(R.string.license_failed) );
                 break;
             default:
                 // No meaningful Activity response code, so generate default Google
                 // Play services dialog
-                final int errorCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(activity);
+                /*final int errorCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(activity);
                 errorDialog = GooglePlayServicesUtil.getErrorDialog(errorCode,
-                        activity, requestCode, null);
-                if (errorDialog == null) {
+                        activity, requestCode, null);*/
+            	final int errorCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(activity);
+                r = new Runnable() {
+                        public void run() {
+                            Dialog errorDialog = GooglePlayServicesUtil.getErrorDialog(errorCode, fact, rc, null );
+                            errorDialog.show();
+                        }
+                    };
+                /*if (errorDialog == null) {
                     // get fallback dialog
                     Log.e("BaseGamesUtils",
                             "No standard error dialog available. Making fallback dialog.");
                     errorDialog = makeSimpleDialog(activity, activity.getString(errorDescription));
-                }
+                }*/
+                //}
         }
-
-        errorDialog.show();
+        activity.runOnUiThread(r);
     }
 
+    
     /**
      * Create a simple {@link Dialog} with an 'OK' button and a message.
      *
@@ -154,11 +170,12 @@ public class BaseGameUtils {
      * @param text the message to display on the Dialog.
      * @return an instance of {@link android.app.AlertDialog}
      */
+    /* NOT safe
     public static Dialog makeSimpleDialog(Activity activity, String text) {
         return (new AlertDialog.Builder(activity)).setMessage(text)
                 .setNeutralButton(android.R.string.ok, null).create();
     }
-
+	*/
     /**
      * Create a simple {@link Dialog} with an 'OK' button, a title, and a message.
      *
@@ -167,6 +184,7 @@ public class BaseGameUtils {
      * @param text the message to display on the Dialog.
      * @return an instance of {@link android.app.AlertDialog}
      */
+    /* NOT safe
     public static Dialog makeSimpleDialog(Activity activity, String title, String text) {
         return (new AlertDialog.Builder(activity))
                 .setTitle(title)
@@ -174,5 +192,23 @@ public class BaseGameUtils {
                 .setNeutralButton(android.R.string.ok, null)
                 .create();
     }
+    */
+    
+    static Runnable makeSimpleDialogRunnable(final Activity activity, final String text) {
+        return new Runnable() {
+            public void run() {
+            	new AlertDialog.Builder(activity).setMessage(text)
+                .setNeutralButton(android.R.string.ok, null).create().show();
+            }
+        };
+    }
 
+    static Runnable makeSimpleDialogRunnable(final Activity activity, final String title, final String text) {
+    	return new Runnable() {
+            public void run() {
+            	new AlertDialog.Builder(activity).setMessage(text).setTitle(title)
+                .setNeutralButton(android.R.string.ok, null).create().show();
+            }
+        };
+    }
 }

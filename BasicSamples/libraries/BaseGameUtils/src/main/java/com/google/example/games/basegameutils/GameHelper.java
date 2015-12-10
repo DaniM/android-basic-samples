@@ -863,8 +863,6 @@ public class GameHelper implements GoogleApiClient.ConnectionCallbacks,
             // error.
             debugLog("resolveConnectionResult: result has no resolution. Giving up.");
             giveUp(new SignInFailureReason(mConnectionResult.getErrorCode()));
-            
-            mConnectionResult = null;
         }
     }
 
@@ -932,25 +930,34 @@ public class GameHelper implements GoogleApiClient.ConnectionCallbacks,
             Log.e("GameHelper", "*** No Activity. Can't show failure dialog!");
             return;
         }
-        Dialog errorDialog = null;
-
+        Runnable r = null;
         switch (actResp) {
             case GamesActivityResultCodes.RESULT_APP_MISCONFIGURED:
-                errorDialog = makeSimpleDialog(activity, GameHelperUtils.getString(
+                //errorDialog = makeSimpleDialog(activity, GameHelperUtils.getString(
+                //        activity, GameHelperUtils.R_APP_MISCONFIGURED));
+                //errorDialog.show();
+            	r = makeSimpleDialogRunnable(activity, GameHelperUtils.getString(
                         activity, GameHelperUtils.R_APP_MISCONFIGURED));
+            	
                 break;
             case GamesActivityResultCodes.RESULT_SIGN_IN_FAILED:
-                errorDialog = makeSimpleDialog(activity, GameHelperUtils.getString(
-                        activity, GameHelperUtils.R_SIGN_IN_FAILED));
+                //errorDialog = makeSimpleDialog(activity, GameHelperUtils.getString(
+                //        activity, GameHelperUtils.R_SIGN_IN_FAILED));
+                //errorDialog.show();
+            	r = makeSimpleDialogRunnable(activity, GameHelperUtils.getString(
+                                activity, GameHelperUtils.R_SIGN_IN_FAILED));
                 break;
             case GamesActivityResultCodes.RESULT_LICENSE_FAILED:
-                errorDialog = makeSimpleDialog(activity, GameHelperUtils.getString(
-                        activity, GameHelperUtils.R_LICENSE_FAILED));
+                //errorDialog = makeSimpleDialog(activity, GameHelperUtils.getString(
+                //        activity, GameHelperUtils.R_LICENSE_FAILED));
+                //errorDialog.show();
+            	r = makeSimpleDialogRunnable(activity, GameHelperUtils.getString(
+                                activity, GameHelperUtils.R_LICENSE_FAILED));
                 break;
             default:
                 // No meaningful Activity response code, so generate default Google
                 // Play services dialog
-                errorDialog = GooglePlayServicesUtil.getErrorDialog(errorCode,
+                /*errorDialog = GooglePlayServicesUtil.getErrorDialog(errorCode,
                         activity, RC_UNUSED, null);
                 if (errorDialog == null) {
                     // get fallback dialog
@@ -962,12 +969,20 @@ public class GameHelper implements GoogleApiClient.ConnectionCallbacks,
                                     GameHelperUtils.R_UNKNOWN_ERROR)
                                     + " "
                                     + GameHelperUtils.errorCodeToString(errorCode));
-                }
+                }*/
+            	final Activity fact = activity;
+            	final int ec = errorCode;
+                r = new Runnable() {
+                        public void run() {
+                            Dialog errorDialog = GooglePlayServicesUtil.getErrorDialog(ec, fact, RC_UNUSED, null );
+                            errorDialog.show();
+                        }
+                    };
         }
-
-        errorDialog.show();
+        activity.runOnUiThread(r);
     }
-
+    
+    /* Not safe anymore. Causes crashes
     static Dialog makeSimpleDialog(Activity activity, String text) {
         return (new AlertDialog.Builder(activity)).setMessage(text)
                 .setNeutralButton(android.R.string.ok, null).create();
@@ -979,7 +994,27 @@ public class GameHelper implements GoogleApiClient.ConnectionCallbacks,
                 .setTitle(title).setNeutralButton(android.R.string.ok, null)
                 .create();
     }
+	*/
 
+    static Runnable makeSimpleDialogRunnable(final Activity activity, final String text) {
+        return new Runnable() {
+            public void run() {
+            	new AlertDialog.Builder(activity).setMessage(text)
+                .setNeutralButton(android.R.string.ok, null).create().show();
+            }
+        };
+    }
+
+    static Runnable makeSimpleDialogRunnable(final Activity activity, final String title, final String text) {
+    	return new Runnable() {
+            public void run() {
+            	new AlertDialog.Builder(activity).setMessage(text).setTitle(title)
+                .setNeutralButton(android.R.string.ok, null).create().show();
+            }
+        };
+    }
+    
+    /* not safe anymore. Causes a crash
     public Dialog makeSimpleDialog(String text) {
         if (mActivity == null) {
             logError("*** makeSimpleDialog failed: no current Activity!");
@@ -994,6 +1029,23 @@ public class GameHelper implements GoogleApiClient.ConnectionCallbacks,
             return null;
         }
         return makeSimpleDialog(mActivity, title, text);
+    }
+    */
+    
+    public Runnable makeSimpleDialogRunnable(String text) {
+        if (mActivity == null) {
+            logError("*** makeSimpleDialog failed: no current Activity!");
+            return null;
+        }
+        return makeSimpleDialogRunnable(mActivity, text);
+    }
+
+    public Runnable makeSimpleDialogRunnable(String title, String text) {
+        if (mActivity == null) {
+            logError("*** makeSimpleDialog failed: no current Activity!");
+            return null;
+        }
+        return makeSimpleDialogRunnable(mActivity, title, text);
     }
 
     void debugLog(String message) {
